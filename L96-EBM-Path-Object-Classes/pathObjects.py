@@ -119,10 +119,10 @@ class L96EBMPath:
         return fig, ax
 
     def ET_plot(self, fax=None, *args, **kwargs):
-        self._2d_plot_projection(ET_plot, fax=fax, *args, **kwargs)
-        return
+        fig, ax = self._2d_plot_projection(ET_plot, fax=fax, *args, **kwargs)
+        return fig, ax
 
-    def MT_plot(self, fax=None, *args, **kwargs):
+    def MT_plot(self, *args, fax=None, **kwargs):
         self._2d_plot_projection(MT_plot, fax=fax, *args, **kwargs)
         return
 

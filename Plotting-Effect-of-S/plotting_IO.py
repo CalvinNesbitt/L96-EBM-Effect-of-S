@@ -10,6 +10,7 @@ Contains:
 import xarray as xr
 import numpy as np
 import sys
+import glob
 
 # Function to identify where we're running
 from pathlib import Path
@@ -31,7 +32,7 @@ else:
     print('Please specify location of attractor data.')
 
 sys.path.append(attractorObjectDirectory)
-from attractors import L96EBMAttractor
+from attractors import L96EBMAttractor, L96EBMAttractorCollection
 from plots import *
 
 ########################################################################
@@ -61,17 +62,28 @@ def m_state_file_name(pd=attractor_data_pd, S=10):
 def get_attractor(file_name):
     return L96EBMAttractor(file_name)
 
-def get_w_attractor(pd=attractor_data_pd, S=10):
+def get_attractors(file_names):
+    return L96EBMAttractorCollection(file_names)
+
+def get_all_sb_attractors(pd=attractor_data_pd):
+    sb_file_list = glob.glob(pd +  '/S*/SB*/*.nc')
+    return get_attractors(sb_file_list)
+
+def get_all_w_attractors(pd=attractor_data_pd):
+    w_file_list = glob.glob(pd +  '/S*/W*/*.nc')
+    return get_attractors(w_file_list)
+
+def get_w_attractor(pd=attractor_data_pd, S=10, **kwargs):
     file_name = w_attractor_file_name(pd=pd, S=S)
-    return get_attractor(file_name)
+    return L96EBMAttractor(file_name, state_name='w', **kwargs)
 
-def get_sb_attractor(pd=attractor_data_pd, S=10):
+def get_sb_attractor(pd=attractor_data_pd, S=10, **kwargs):
     file_name = sb_attractor_file_name(pd=pd, S=S)
-    return get_attractor(file_name)
+    return L96EBMAttractor(file_name, state_name='sb', **kwargs)
 
-def get_m_state(pd=attractor_data_pd, S=10):
+def get_m_state(pd=attractor_data_pd, S=10, **kwargs):
     file_name = m_state_file_name(pd=pd, S=S)
-    return get_attractor(file_name)
+    return L96EBMAttractor(file_name, state_name='m', **kwargs)
 
 def ds_to_np(ds):
     "Converts ds point to np array."

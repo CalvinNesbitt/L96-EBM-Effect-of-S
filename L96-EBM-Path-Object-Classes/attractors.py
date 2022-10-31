@@ -31,7 +31,7 @@ class L96EBMAttractor:
     Attractor in the L96 EBM model.
     """
 
-    def __init__(self, file_location, state_name=None):
+    def __init__(self, file_location, interpolate_space=False, interpolate_time=False, state_name=None):
         """
         Parameters
         -----------
@@ -45,6 +45,15 @@ class L96EBMAttractor:
         # Unpack path information
         self.file_location = file_location
         self.ds = xr.open_dataset(file_location)
+        if interpolate_space:
+            space_grid = np.arange(min(self.ds.space), max(self.ds.space) + 0.1, 0.1)
+            self.ds = self.ds.interp({'space': space_grid}, method='cubic', kwargs={'bounds_error': False, 'fill_value':'extrapolate'})
+        if  interpolate_time:
+            dt = (self.ds.time[1] - self.ds.time[0]).item()
+            self.ds = self.ds.assign_coords({'time': dt * np.arange(len(self.ds.time))})
+            time_grid = np.arange(0, max(self.ds.time) + 0.01 - min(self.ds.time), 0.01)
+            self.ds = self.ds.interp({'time':time_grid}, method='cubic', kwargs={'bounds_error': False, 'fill_value':'extrapolate'})
+
         self.attrs = self.ds.attrs
         self.S = self.attrs['S']
         self._color = None
@@ -53,7 +62,7 @@ class L96EBMAttractor:
         if state_name is None:
             self._determine_state_name()
         else:
-            self.state_name = direction
+            self.state_name = state_name
 
     def _determine_state_name(self):
         "Determine state name if user doesn't specify."
@@ -66,6 +75,14 @@ class L96EBMAttractor:
         return
 
     @property
+    def X(self):
+        return self.ds.X
+
+    @property
+    def T(self):
+        return self.ds.T
+
+    @property
     def color(self):
         "Default color for plotting"
         if self._color is None:
@@ -73,7 +90,7 @@ class L96EBMAttractor:
                 return 'r'
             elif self.state_name == 'sb':
                 return 'b'
-            elif self.state_name == 'sb':
+            elif self.state_name == 'm':
                 return 'g'
         else:
             return self._color
@@ -81,6 +98,21 @@ class L96EBMAttractor:
     @color.setter
     def color(self, c):
         self._color = c
+
+    def _observable_mean(self, obs):
+        return obs(self.ds).values.flatten().mean()
+
+    @property
+    def M_mean(self):
+        return self._observable_mean(momentum)
+
+    @property
+    def E_mean(self):
+        return self._observable_mean(energy)
+
+    @property
+    def T_mean(self):
+        return self._observable_mean(temperature)
 
     def clip_path(self, i, j, normalise_time = True):
         "Reduce path to just points those between time indices i and j."
@@ -103,8 +135,7 @@ class L96EBMAttractor:
     def get_observable_points_in_T_slice(self, obs, temp_thresholds):
         return obs(points_within_T_slice(self.ds, temp_thresholds))
 
-
-    def _2d_plot_projection(self, plot, *args, c=None, fax=None, attractors=None, **kwargs):
+    def _2d_plot_projection(self, plot, *args, c=None, fax=None, **kwargs):
         "2D plot of data in a certain projection"
         if fax is None:
             fig, ax = init_2d_fax()
@@ -152,3 +183,44 @@ class L96EBMAttractor:
         interpolated_ds = self.ds.interp(time=np.arange(min(self.time), max(self.time), 0.1), space=np.arange(1, 50, 0.1))
         interpolated_ds.X.plot(*args, ax=ax, **kwargs)
         return fig, ax
+
+class L96EBMAttractorCollection:
+    "Collection of different L96-EBM Attractors."
+
+    def __init__(self, file_locations, state_name=None):
+
+        self._attractor_list = [L96EBMAttractor(f, state_name) for f in file_locations]
+        self.color = self._attractor_list[0].color
+
+    def __getitem__(self, idx):
+        return self._attractor_list[idx]
+
+    def __len__(self):
+        return len(self._attractor_list)
+
+    def _2d_plot_projection(self, plot, *args, c=None, fax=None, **kwargs):
+        "2D plot of data in a certain projection"
+        if fax is None:
+            fig, ax = init_2d_fax()
+            fax = [fig, ax]
+        else:
+            fig, ax = fax
+        if c is None:
+            c = self.color
+
+        for attractor in self._attractor_list:
+            plot(attractor.ds, *args,  fax=fax, c=c, **kwargs)
+        ax.grid()
+        return fig, ax
+
+    def ET_plot(self, *args, fax=None, **kwargs):
+        self._2d_plot_projection(ET_plot, fax=fax, *args, **kwargs)
+        return
+
+    def MT_plot(self, *args, fax=None, **kwargs):
+        self._2d_plot_projection(MT_plot, fax=fax, *args, **kwargs)
+        return
+
+    def EM_plot(self, *args, fax=None, **kwargs):
+        self._2d_plot_projection(EM_plot, fax=fax, *args, **kwargs)
+        return
