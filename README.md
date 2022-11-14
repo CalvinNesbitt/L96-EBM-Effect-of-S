@@ -1,2 +1,2 @@
 # L96-EBM-Effect-of-S
-In this repository we explore the effect of S on the L96-EBM
+In this repository we explore the effect of the solar parameter S in a minimal model of climate, the L96-EBM.
