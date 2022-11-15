@@ -180,7 +180,7 @@ class L96EBMAttractor:
         fig, ax = fax
 
         # Reinterpolate data so plot looks better
-        interpolated_ds = self.ds.interp(time=np.arange(min(self.time), max(self.time), 0.1), space=np.arange(1, 50, 0.1))
+        interpolated_ds = self.ds.interp(time=np.arange(min(self.ds.time), max(self.ds.time), 0.1), space=np.arange(1, 50, 0.1))
         interpolated_ds.X.plot(*args, ax=ax, **kwargs)
         return fig, ax
 
